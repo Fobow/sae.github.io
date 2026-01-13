@@ -1,0 +1,1245 @@
+<html lang="en">
+  <head><meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+    <title>S-AE</title>
+    <meta name="description" content="Rethinking the Semantic-based Autoencoder">
+    <meta name="keywords" content="Diffusion model">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#EDE8F5">
+    <meta property="og:image" content="">
+    <link rel="stylesheet" href="./assets/index.css">
+    <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.6.2/css/bootstrap.min.css'>
+    <link rel="shortcut icon" href="./assets/icon.png" type="image/x-icon">
+    <style>
+        @font-face {
+            font-family: 'Roboto';
+            font-style: normal;
+            font-stretch: 100%;
+            font-display: block;
+            font-weight: 300 700;
+            src: url('./assets/roboto.woff2') format('woff2');
+            unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+        }
+
+        @font-face {
+          font-family: 'DancingScript';
+          src: url('./assets/DancingScript-Bold.ttf') format('truetype');
+        }
+
+        @font-face {
+          font-family: 'Caveat';
+          src: url('./assets/Caveat-Medium.ttf') format('truetype');
+        }
+
+        @font-face {
+          font-family: 'Alegreya';
+          src: url('./assets/Alegreya-Regular.ttf') format('truetype');
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        video {
+            background-color: #000000;
+            aspect-ratio: 16 / 9;
+        }
+
+        section.portrait video {
+            background-color: #000000;
+            aspect-ratio: 16 / 9;
+            object-fit: cover;
+        }
+
+        section.multi_ip video {
+            background-color: #000000;
+            aspect-ratio: 4 / 3;
+            object-fit: cover;
+        }
+
+        section.portrait .prompt-wrap.full-screen-wrap video {
+            object-fit: cover;
+        }
+
+        section.portrait .flex {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-start;
+            gap: 10px;
+        }
+
+        section.portrait2 .flex {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: flex-start;
+        }
+
+        section.portrait .flex > div {
+            flex: 0 0 calc((100% - 5 * 10px) / 6);
+        }
+        section.portrait2 .flex > div {
+            flex: 0 0 calc((100% - 1 * 10px) / 2);
+        }
+
+        section.portrait .prompt {
+            font-size: 10px;
+        }
+        section.portrait2 .prompt {
+            font-size: 12px;
+        }
+
+        section.portrait .flex-row {
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+        }
+
+        section.portrait2 .flex-row {
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+        }
+
+        @media (max-width: 768px) {
+            section.portrait .flex > div {
+                flex: 0 0 calc((100% - 1 * 10px) / 2);
+            }
+        }
+
+        @media (max-width: 768px) {
+            section.portrait2 .flex > div {
+                flex: 0 0 calc((100% - 0 * 10px) / 1);
+            }
+        }
+
+        /* Ensure prompt adjusts for portrait mode */
+        .portrait .prompt {
+            position: absolute;  /* Allow positioning relative to the container */
+            bottom: 5%;          /* Adjust this to control the vertical placement of the prompt */
+            left: 50%;           /* Center horizontally */
+            transform: translateX(-50%); /* Offset by 50% of its width to truly center */
+            max-width: 80%;
+            text-align: center;  /* Center the text inside the prompt */
+            color: white;        /* Optional, if you want the text to stand out */
+            font-size: 1.2em;    /* Optional, adjust the text size */
+        }
+
+        .portrait2 .prompt{
+            position: absolute;  /* Allow positioning relative to the container */
+            bottom: 5%;          /* Adjust this to control the vertical placement of the prompt */
+            left: 50%;           /* Center horizontally */
+            transform: translateX(-50%); /* Offset by 50% of its width to truly center */
+            max-width: 80%;
+            text-align: center;  /* Center the text inside the prompt */
+            color: white;        /* Optional, if you want the text to stand out */
+            font-size: 1.2em;    /* Optional, adjust the text size */
+        }
+
+        body {
+            background-color: #000000;
+            color: #ffffff;
+            font-family: "Roboto", sans-serif;
+            padding: 0;
+            margin: 0;
+        }
+
+        #intro {
+            padding: 100px 0 80px 0;
+            justify-content: center;
+            text-align: center;
+            background: transparent;  /* 设置背景透明 */
+            color: #ffffff; /* 保证文字可读 */
+            position: relative;
+            /* height: 100vh;  设置容器的高度为视口高度 */
+            height: auto;  /* 设置容器的高度为视口高度 */
+            width: 100%;    /* 宽度为100% */
+        }
+
+        #background-video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* 视频填充整个容器 */
+            z-index: -1; /* 确保视频在内容后面 */
+            filter: brightness(0.3); /* 调低亮度，使视频更暗 */
+        }
+
+        #intro h1 {
+            font-size: 90px;
+            font-weight: 300;
+            margin: 20px 0;
+        } 
+
+        #intro h2 {
+            margin: 20px 0 40px 0;
+            font-weight: 300;
+            color: #ffffff
+        }
+
+        #intro h2 strong {
+            color: #fff;
+        }
+
+        .authors {
+            font-size: 16px;
+            font-weight: 500;
+            color: #ffffff;
+            text-align: center;
+            margin-bottom: 25px;
+            width: 80%;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .author-block {
+            display: inline-block;
+            margin: 0 10px 0 10px;
+        }
+
+        .author-block a {
+            color: #ffffff;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .author-block a:hover {
+            color: #fff;
+        }
+
+        .author-affiliation {
+            font-size: 16px;
+            color: #ffffff;
+            text-align: center;
+            margin-bottom: 60px;
+            width: 80%;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .author-affiliation .author-block {
+            display: inline-block;
+            margin: 0 15px;
+        }
+
+        section {
+            max-width: 1920px;
+            margin: 0 auto;
+        }
+
+        .content {
+            padding: 0 10%;
+        }
+
+        .button {
+            background-color: #ccc;
+            color: #000;
+            padding: 10px 20px;
+            border-radius: 100px;
+            cursor: pointer;
+            transition: background-color 0.5s;
+            text-decoration: none;
+            margin-right: 8px;
+            margin-bottom: 8px;
+            display: inline-block;
+        }
+
+        .button:hover {
+            background-color: #fff;
+        }
+
+        .bibtex-section {
+            background-color: #111;
+            padding: 40px 10%;
+            text-align: center;
+            margin-top: 60px;
+            color: #ccc;
+        }
+
+        .bibtex-section h3 {
+            font-size: 24px;
+            font-weight: 400;
+            color: #ccc;
+            margin-bottom: 20px;
+        }
+
+        .bibtex-code {
+            background-color: #222;
+            color: #ddd;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: left;
+            display: inline-block;
+            font-family: monospace;
+            max-width: 800px;
+            overflow-x: auto;
+        }
+
+        section {
+            margin-top: 100px;
+        }
+        section:first-of-type {
+            margin-top: 0;
+        }
+
+        .title {
+            background-color: #000;
+            position: sticky;
+            top: 0;
+            padding: 20px 10%;
+            font-size: 20px;
+            font-weight: 600;
+            z-index: 1000;
+            min-height: 60px;
+            box-sizing: border-box;
+        }
+
+        .description {
+            padding: 0 10% 20px 10%;
+            color: #999;
+            line-height: 25px;
+            font-weight: 300;
+        }
+
+        .highlight {
+            color: #fff;
+            font-weight: 500;
+        }
+
+        .flex-row {
+            display: flex;
+            column-gap: 5px;
+            flex-wrap: nowrap;
+            justify-content: space-between;
+            padding: 0 5px 5px 5px;
+            
+        }
+
+        .flex-row > div {
+            flex-grow: 1;
+            flex-basis: 0;
+            position: relative;
+        }
+
+        .flex > div {
+            width: calc(100% / 3 - 5px * 2 / 3);
+            margin-top: 2.5px;
+            margin-bottom: 2.5px;
+            position: relative;
+        }
+
+        .flex {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            padding: 0 5px;
+        }
+
+        .prompt-wrap {
+            position: relative;
+        }
+
+        .flex-2 {
+            justify-content: center;
+            column-gap: 5px;
+        }
+        .flex-2 > div {
+            width: calc(100% / 2 - 5px / 2);
+            min-width: calc(100% / 3 - 5px * 2 / 3);
+            max-width: calc(100vh - 200px);
+        }
+
+        video, img {
+            width: 100%;
+        }
+
+        .loading-placeholder {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            color: rgba(255, 255, 255, 0.6);
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .loading-text {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .loading-icon {
+            font-size: 48px;
+        }
+
+        .prompt {
+            max-width: calc(100% - 20px);
+            position: absolute;
+            background: rgba(0,0,0,0.5);
+            color: rgba(255,255,255,0.9);
+            font-size: 10px;
+            backdrop-filter: blur(10px);
+            bottom: 10px;
+            left: 10px;
+            padding: 5px 10px;
+            border-radius: 15px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s;
+            box-sizing: border-box;
+        }
+
+        .flex-very-compact .full-screen-button {
+            width: 100%;
+            height: 100%;
+            top: 0;
+            right: 0;
+            border-radius: 0;
+        }
+
+        .chinese {
+            font-family: 'Noto Sans SC', sans-serif;
+            font-weight: bold;
+            color: #d18585;
+            font-size: 1.1em;
+        }
+
+        @media (hover: hover) {
+            .prompt-wrap:hover .prompt,
+            .full-screen-wrap:hover .full-screen-button {
+                opacity: 1;
+                pointer-events: all;
+            }
+            #contributors a:hover {
+                background-color: #222;
+            }
+        }
+
+        @media (hover: none) {
+            #contributors a {
+                pointer-events: none;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .flex-dynamic > div {
+                width: calc(100% / 2 - 5px / 2);
+            }
+        }
+
+        @media (max-width: 640px) {
+            #intro h1 {
+                font-size: 50px;
+            }
+            #intro h2 {
+                font-size: 20px;
+            }
+            .ruler {
+                font-size: 10px;
+            }
+        }
+
+        @media (max-width: 512px) {
+            .flex-dynamic > div,
+            .flex-dynamic-1 > div {
+                width: 100%;
+            }
+
+            .content {
+                padding: 0 12px;
+            }
+
+            .description {
+                padding: 0 12px 20px 12px;
+            }
+
+            .title {
+                padding: 20px 12px;
+            }
+
+            .ruler-tight {
+                font-size: 6px;
+                column-gap: 0;
+            }
+
+            .title-long {
+                font-size: 16px;
+            }
+
+        }
+
+        /* number of pics in a row */
+        .flex-dynamic > div {
+            width: calc(25% - 10px);
+        }
+
+        .flex-dynamic8 > div {
+            width: calc(12.5% - 5px);
+        }
+
+        .flex-dynamic1 > div {
+            width: calc(100%);
+        }
+        
+        .col-title {
+            text-align: center;
+        }
+
+        .margin-top {
+            margin-top: 50px;
+        }
+
+        .ruler {
+            text-align: center;
+            position: sticky;
+            top: 60px;
+            z-index: 999;
+            background-color: #000;
+            color: #999;
+            padding: 5px 0;
+        }
+
+        .ruler > div {
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .selected {
+            box-shadow: 0 0 0 5px #fff;
+        }
+
+        #title-container {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        #title-icon {
+          height: 8em;
+          width: auto;
+          margin-right: 0px;
+          vertical-align: middle;
+        }
+
+        .title-art {
+          font-family: 'DancingScript', sans-serif;
+        }
+
+        .title-art2 {
+          font-family: 'Caveat', sans-serif;
+        }
+
+        .title-art3 {
+          font-family: 'Alegreya', sans-serif;
+        }
+
+        h2 {
+            font-size: 2.5em;
+            color: rgb(255, 255, 255);
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+        }
+
+        #video-wrapper {
+          border-radius: 50px;
+          max-width: 720px;
+          padding-bottom: 40%; 
+          margin: 0 auto;
+          background: #000000;
+        }
+
+
+        .ethics-section {
+            padding: 100px 10%;
+            text-align: center;
+            margin-top: 60px;
+            color: #ccc;
+            max-width: 1500px;
+            margin: 0 auto;
+        }
+
+        .acknowledgements-section {
+            padding: 100px 10%;
+            text-align: center;
+            margin-top: 60px;
+            color: #ccc;
+            max-width: 1500px;
+            margin: 0 auto;
+        }
+
+        .video-content {
+            padding: 0 10%;
+        }
+
+        #video {
+            max-width: 80%;
+            margin: 0 auto;
+        }
+
+    </style>
+</head>
+<body>
+    <section id="intro">
+        <!-- 添加背景视频 -->
+        <!-- <video autoplay muted loop id="background-video">
+            <source src="./assets/magref_video/demo/teaser_background.mp4" type="video/mp4">
+        </video> -->
+        <div class="content">
+            <div id="title-container">
+              <img id="title-icon" src="./assets/icon.png" alt="Icon">
+              <h1 class="title-art"><strong>S-AE</strong></h1>
+            </div>
+            <h2 class="title-art2">Rethinking the Semantic-based Autoencoder</h2>
+            
+            <div class="authors">
+                <span class="author-block"><a href="https://github.com/MAGREF-Video/MAGREF">Xiaojie Li</a></span>
+                <span class="author-block"><a href="https://github.com/YYY-MMW">Yang Zhao</a></span>
+                <span class="author-block"><a href="https://scholar.google.com/citations?user=XtHtIDcAAAAJ&hl=en">Ming Li</a></span>
+                <span class="author-block"><a href="https://actasidiot.github.io/">Yancheng Zhang</a></span>
+                <span class="author-block"><a href="https://www.jacobzhiyuanfang.me/">Zonglin Lyu</a></span> <br>
+                <span class="author-block"><a href="https://shyuanbest.github.io/">Yunpeng Chen</a></span>
+                <span class="author-block"><a href="https://ihollywhy.github.io/">Rui Wang</a></span>
+                <span class="author-block"><a href="https://angtianwang.github.io/">Daquan Zhou</a></span>
+            </div>
+
+            <!-- Added the affiliations section -->
+            <div class="author-affiliation">
+                <p><span>AIP, ByteDance</span></p>
+            </div>
+            
+
+            <a class="button" href="#" target="_blank" rel="noopener noreferrer">
+                <i class="fa fa-github" style="font-size:17px"></i>
+                GitHub
+            </a>
+            <a class="button" href="#" target="_blank" rel="noopener noreferrer">
+                <i class="fa fa-github" style="font-size:17px"></i>
+                Research Paper 
+            </a>
+            <a class="button" href="#" target="_blank" rel="noopener noreferrer">
+                Project
+            </a>
+            <a class="button" href="#" target="_blank" rel="noopener noreferrer">
+                Hugging Face
+            </a>
+            <a class="button"href="#" target="_blank" rel="noopener noreferrer">
+                Video
+            </a>
+            
+        </div>
+
+    </section>
+
+    <!-- 文本标题 -->
+    <!-- <div class="container text-center" style="margin-top: 50px;">
+    <p class="title-art3" style="font-size: 1.6em;">Episodes Created from MAGREF-generated Videos</p>
+    <p class="description" style="font-size: 1.0em;">Turn on the sound for a better viewing experience</p>
+    </div> -->
+
+    <!-- 视频主体 -->
+    <div class="show-neighbors" style="display: flex; justify-content: center; flex-direction: column; margin-top: 30px; margin-bottom: 40px;">
+    <div style="display: flex; justify-content: center;">
+        <div style="
+        border: 4px solid #ffffff44;
+        border-radius: 2vmin;
+        padding: 8px;
+        background: #1c1c1c;
+        box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+        ">
+        <video
+            src="./assets/sae_video/demo_video.mp4"
+            playsinline
+            controls
+            style="
+            width: 90vw;
+            max-width: 1000px;
+            aspect-ratio: 16 / 9;
+            object-fit: cover;
+            border-radius: 2vmin;
+            background: black;
+            display: block;
+            "
+        ></video>
+        </div>
+    </div>
+    </div>
+
+
+
+
+    <section class="acknowledgements-section" style="max-width: 1200px; margin: 0 auto;">
+        <div style="
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 30px;
+            background-color: rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(4px);
+        ">
+                <h3 style="text-align: center; font-weight: bold; font-size: 1.8rem; margin-bottom: 1rem; color: white;">
+                    Abstract
+                </h3>
+                    <!-- <p style="font-size: 1.05rem; line-height: 1.6; color: white; text-align: left; text-indent: 2em;"> -->
+                    <p style="font-size: 1.05rem; line-height: 1.6; color: white; text-align: left; text-indent: 3em;">
+                    Latent generative modeling has emerged as the dominant paradigm for Diffusion Transformers (DiT), where a pretrained autoencoder compresses image pixels into a latent space to facilitate the diffusion process. Recently, the use of semantic encoders within autoencoders (AEs) has gained attention, yet their influence on image reconstruction and diffusion model training remains insufficiently explored. In this study, we perform an in-depth examination of how semantic encoders shape latent representation learning for the autoencoders. Our findings reveal a fundamental trade-off: while semantic encoders generate latent spaces enriched with visual semantics, their high level of abstraction makes it challenging to capture fine-grained geometric relationships, thereby requiring larger models and longer training for convergence. To address this issue, we build upon recent advances in representation learning that enable the joint modeling of both semantic abstraction and geometric detail. This leads to a Semantic Auto-Encoder (S-AE) that achieves state-of-the-art performance, combining superior reconstruction quality and discriminative capability. Specifically, with S-AE, we are able to provide a unified latent space that achieves 0.06 FID for image reconstruction and 81.9% classification accuracy on ImageNet, set a state-of-the-art benchmark. Codes and model weights will be made publicably available. 
+                    </p>
+        </div>
+    </section>
+
+
+
+
+
+    <section id="video">
+        <div class="title" style="font-family: 'Alegreya'; font-size: 1.6em;">
+          Image Reconstruction
+        </div>
+        <div class="description">
+            Encoding and decoding an image. We select five extremely hard cases from the internet, consisting of texts and small humans. Semantic Auto-encoder achieves strong reconstruction while other methods contain artifacts.
+        </div>
+        
+        <div class="video-content">
+
+        <div class="flex flex-dynamic1">
+
+            <div class="prompt-wrap full-screen-wrap" style="position: relative;">
+                <div class="loading-placeholder">
+                    <div class="loading-text">Loading...</div>
+                    <div class="loading-icon">&#9749</div>
+                </div>
+                <img
+                src="./assets/sae_recon/merge1/input/image.png"
+                alt=""
+                onload="this.style.display='block'; this.previousElementSibling.style.display='none';"/>
+            </div>
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">Input</div>
+
+            <div class="prompt-wrap full-screen-wrap" style="position: relative;">
+                <div class="loading-placeholder">
+                    <div class="loading-text">Loading...</div>
+                    <div class="loading-icon">&#9749</div>
+                </div>
+                <img
+                src="./assets/sae_recon/merge1/vae/image.png"
+                alt=""
+                onload="this.style.display='block'; this.previousElementSibling.style.display='none';"/>
+            </div>
+
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">SD-VAE</div>
+
+            <div class="prompt-wrap full-screen-wrap" style="position: relative;">
+                <div class="loading-placeholder">
+                    <div class="loading-text">Loading...</div>
+                    <div class="loading-icon">&#9749</div>
+                </div>
+                <img
+                src="./assets/sae_recon/merge1/rae/image.png"
+                alt=""
+                onload="this.style.display='block'; this.previousElementSibling.style.display='none';"/>
+            </div>
+
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">R-AE</div>
+            
+            <div class="prompt-wrap full-screen-wrap" style="position: relative;">
+                <div class="loading-placeholder">
+                    <div class="loading-text">Loading...</div>
+                    <div class="loading-icon">&#9749</div>
+                </div>
+                <img
+                src="./assets/sae_recon/merge1/sae/image.png"
+                alt=""
+                onload="this.style.display='block'; this.previousElementSibling.style.display='none';"/>
+            </div>
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">S-AE</div>
+
+        </div>
+        </div>
+    </section>
+
+
+    <section id="video">
+        <div class="title" style="font-family: 'Alegreya'; font-size: 1.6em;">
+          ImageNet Overfitting
+        </div>
+        <div class="description">
+            Overfitting a single image from ImageNet. our method is able to reconstruct much finer deatails. In constrast, VAE and R-AE baselines cannot accurately generate the fine details like faces and symbols despite their faster convergence.
+        </div>
+
+        <div class="video-content">
+
+        <div class="flex flex-dynamic1">
+
+            <div class="prompt-wrap full-screen-wrap" style="position: relative;">
+                <div class="loading-placeholder">
+                    <div class="loading-text">Loading...</div>
+                    <div class="loading-icon">&#9749</div>
+                </div>
+                <img
+                src="./assets/sae_overfit/merge/vae/image.png"
+                alt=""
+                onload="this.style.display='block'; this.previousElementSibling.style.display='none';"/>
+            </div>
+
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">SD-VAE</div>
+
+            <div class="prompt-wrap full-screen-wrap" style="position: relative;">
+                <div class="loading-placeholder">
+                    <div class="loading-text">Loading...</div>
+                    <div class="loading-icon">&#9749</div>
+                </div>
+                <img
+                src="./assets/sae_overfit/merge/rae/image.png"
+                alt=""
+                onload="this.style.display='block'; this.previousElementSibling.style.display='none';"/>
+            </div>
+
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">R-AE</div>
+            
+            <div class="prompt-wrap full-screen-wrap" style="position: relative;">
+                <div class="loading-placeholder">
+                    <div class="loading-text">Loading...</div>
+                    <div class="loading-icon">&#9749</div>
+                </div>
+                <img
+                src="./assets/sae_overfit/merge/sae/image.png"
+                alt=""
+                onload="this.style.display='block'; this.previousElementSibling.style.display='none';"/>
+            </div>
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">S-AE</div>
+
+        </div>
+
+        </br>
+        <div class="flex flex-dynamic1">
+
+            <div class="prompt-wrap full-screen-wrap" style="position: relative;">
+                <div class="loading-placeholder">
+                    <div class="loading-text">Loading...</div>
+                    <div class="loading-icon">&#9749</div>
+                </div>
+                <img
+                src="./assets/sae_overfit/merge2/vae/image.png"
+                alt=""
+                onload="this.style.display='block'; this.previousElementSibling.style.display='none';"/>
+            </div>
+
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">SD-VAE</div>
+
+            <div class="prompt-wrap full-screen-wrap" style="position: relative;">
+                <div class="loading-placeholder">
+                    <div class="loading-text">Loading...</div>
+                    <div class="loading-icon">&#9749</div>
+                </div>
+                <img
+                src="./assets/sae_overfit/merge2/rae/image.png"
+                alt=""
+                onload="this.style.display='block'; this.previousElementSibling.style.display='none';"/>
+            </div>
+
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">R-AE</div>
+            
+            <div class="prompt-wrap full-screen-wrap" style="position: relative;">
+                <div class="loading-placeholder">
+                    <div class="loading-text">Loading...</div>
+                    <div class="loading-icon">&#9749</div>
+                </div>
+                <img
+                src="./assets/sae_overfit/merge2/sae/image.png"
+                alt=""
+                onload="this.style.display='block'; this.previousElementSibling.style.display='none';"/>
+            </div>
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">S-AE</div>
+
+        </div>
+        </div>
+
+    </section>
+
+
+    <section id="video">
+        <div class="title" style="font-family: 'Alegreya'; font-size: 1.6em;">
+          Latent Feature Visualization.
+        </div>
+        <div class="description">
+            Visualization of the latent feature of different autoencoders. It is observed that for VAE, the geometry structures are well preserved, yet there are less semantic difference between different parts of each image. For DINOv2 and SigLIP, the different parts of the images are differentiated but the geometry structure’s details are not well preserved. In contrast, for Semantic Auto-encoder, both the image semantics and the geometry details are well preserved.
+        </div>
+
+        <div class="video-content">
+
+        <div class="flex flex-dynamic1">
+
+            <div class="prompt-wrap full-screen-wrap" style="position: relative;">
+                <div class="loading-placeholder">
+                    <div class="loading-text">Loading...</div>
+                    <div class="loading-icon">&#9749</div>
+                </div>
+                <img
+                src="./assets/sae_latent/input/image.png"
+                alt=""
+                onload="this.style.display='block'; this.previousElementSibling.style.display='none';"/>
+            </div>
+
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">Input</div>
+
+            <div class="prompt-wrap full-screen-wrap" style="position: relative;">
+                <div class="loading-placeholder">
+                    <div class="loading-text">Loading...</div>
+                    <div class="loading-icon">&#9749</div>
+                </div>
+                <img
+                src="./assets/sae_latent/siglip/image.png"
+                alt=""
+                onload="this.style.display='block'; this.previousElementSibling.style.display='none';"/>
+            </div>
+
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">SigLIP</div>
+
+            <div class="prompt-wrap full-screen-wrap" style="position: relative;">
+                <div class="loading-placeholder">
+                    <div class="loading-text">Loading...</div>
+                    <div class="loading-icon">&#9749</div>
+                </div>
+                <img
+                src="./assets/sae_latent/vae/image.png"
+                alt=""
+                onload="this.style.display='block'; this.previousElementSibling.style.display='none';"/>
+            </div>
+
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">SD-VAE</div>
+
+            <div class="prompt-wrap full-screen-wrap" style="position: relative;">
+                <div class="loading-placeholder">
+                    <div class="loading-text">Loading...</div>
+                    <div class="loading-icon">&#9749</div>
+                </div>
+                <img
+                src="./assets/sae_latent/rae/image.png"
+                alt=""
+                onload="this.style.display='block'; this.previousElementSibling.style.display='none';"/>
+            </div>
+
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">R-AE</div>
+            
+            <div class="prompt-wrap full-screen-wrap" style="position: relative;">
+                <div class="loading-placeholder">
+                    <div class="loading-text">Loading...</div>
+                    <div class="loading-icon">&#9749</div>
+                </div>
+                <img
+                src="./assets/sae_latent/sae/image.png"
+                alt=""
+                onload="this.style.display='block'; this.previousElementSibling.style.display='none';"/>
+            </div>
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">S-AE</div>
+
+        </div>
+
+        </br>
+        <div class="flex flex-dynamic1">
+
+            <div class="prompt-wrap full-screen-wrap" style="position: relative;">
+                <div class="loading-placeholder">
+                    <div class="loading-text">Loading...</div>
+                    <div class="loading-icon">&#9749</div>
+                </div>
+                <img
+                src="./assets/sae_overfit/merge2/vae/image.png"
+                alt=""
+                onload="this.style.display='block'; this.previousElementSibling.style.display='none';"/>
+            </div>
+
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">SD-VAE</div>
+
+            <div class="prompt-wrap full-screen-wrap" style="position: relative;">
+                <div class="loading-placeholder">
+                    <div class="loading-text">Loading...</div>
+                    <div class="loading-icon">&#9749</div>
+                </div>
+                <img
+                src="./assets/sae_overfit/merge2/rae/image.png"
+                alt=""
+                onload="this.style.display='block'; this.previousElementSibling.style.display='none';"/>
+            </div>
+
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">R-AE</div>
+            
+            <div class="prompt-wrap full-screen-wrap" style="position: relative;">
+                <div class="loading-placeholder">
+                    <div class="loading-text">Loading...</div>
+                    <div class="loading-icon">&#9749</div>
+                </div>
+                <img
+                src="./assets/sae_overfit/merge2/sae/image.png"
+                alt=""
+                onload="this.style.display='block'; this.previousElementSibling.style.display='none';"/>
+            </div>
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">S-AE</div>
+
+        </div>
+        </div>
+
+    </section>
+
+    <section id="video">
+        <div class="title" style="font-family: 'Alegreya'; font-size: 1.6em;">
+          Comparison of Single-Image Overfit Convergence
+        </div>
+        <div class="description">
+            Comparison of sampled images at different overfitting steps.
+        </div>
+
+        <div class="video-content">
+
+
+        <div class="flex flex-dynamic8">
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">Step 1K</div>
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">2K</div>
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">3K</div>
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">4K</div>
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">5K</div>
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">7.5K</div>
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">10K</div>
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">Zoom in</div>
+        </div>
+
+
+        <div class="flex flex-dynamic1">
+
+
+            <div class="prompt-wrap full-screen-wrap" style="position: relative;">
+                <div class="loading-placeholder">
+                    <div class="loading-text">Loading...</div>
+                    <div class="loading-icon">&#9749</div>
+                </div>
+                <img
+                src="./assets/sae_overfit/police/vae/image.png"
+                alt=""
+                onload="this.style.display='block'; this.previousElementSibling.style.display='none';"/>
+            </div>
+
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">SD-VAE</div>
+
+            <div class="prompt-wrap full-screen-wrap" style="position: relative;">
+                <div class="loading-placeholder">
+                    <div class="loading-text">Loading...</div>
+                    <div class="loading-icon">&#9749</div>
+                </div>
+                <img
+                src="./assets/sae_overfit/police/rae/image.png"
+                alt=""
+                onload="this.style.display='block'; this.previousElementSibling.style.display='none';"/>
+            </div>
+
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">R-AE</div>
+            
+            <div class="prompt-wrap full-screen-wrap" style="position: relative;">
+                <div class="loading-placeholder">
+                    <div class="loading-text">Loading...</div>
+                    <div class="loading-icon">&#9749</div>
+                </div>
+                <img
+                src="./assets/sae_overfit/police/sae/image.png"
+                alt=""
+                onload="this.style.display='block'; this.previousElementSibling.style.display='none';"/>
+            </div>
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">S-AE</div>
+
+        </div>
+
+        <!-- <br>
+        <div class="flex flex-dynamic8">
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">Step 1K</div>
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">2K</div>
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">3K</div>
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">4K</div>
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">5K</div>
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">7.5K</div>
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">10K</div>
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">Zoom in</div>
+        </div>
+
+        <div class="flex flex-dynamic1">
+
+
+            <div class="prompt-wrap full-screen-wrap" style="position: relative;">
+                <div class="loading-placeholder">
+                    <div class="loading-text">Loading...</div>
+                    <div class="loading-icon">&#9749</div>
+                </div>
+                <img
+                src="./assets/sae_overfit/soccer/vae/image.png"
+                alt=""
+                onload="this.style.display='block'; this.previousElementSibling.style.display='none';"/>
+            </div>
+
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">SD-VAE</div>
+
+            <div class="prompt-wrap full-screen-wrap" style="position: relative;">
+                <div class="loading-placeholder">
+                    <div class="loading-text">Loading...</div>
+                    <div class="loading-icon">&#9749</div>
+                </div>
+                <img
+                src="./assets/sae_overfit/soccer/rae/image.png"
+                alt=""
+                onload="this.style.display='block'; this.previousElementSibling.style.display='none';"/>
+            </div>
+
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">R-AE</div>
+            
+            <div class="prompt-wrap full-screen-wrap" style="position: relative;">
+                <div class="loading-placeholder">
+                    <div class="loading-text">Loading...</div>
+                    <div class="loading-icon">&#9749</div>
+                </div>
+                <img
+                src="./assets/sae_overfit/soccer/sae/image.png"
+                alt=""
+                onload="this.style.display='block'; this.previousElementSibling.style.display='none';"/>
+            </div>
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">S-AE</div>
+
+        </div>
+
+        <br>
+        <div class="flex flex-dynamic8">
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">Step 1K</div>
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">2K</div>
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">3K</div>
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">4K</div>
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">5K</div>
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">7.5K</div>
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">10K</div>
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">Zoom in</div>
+        </div>
+
+        <div class="flex flex-dynamic1">
+
+
+            <div class="prompt-wrap full-screen-wrap" style="position: relative;">
+                <div class="loading-placeholder">
+                    <div class="loading-text">Loading...</div>
+                    <div class="loading-icon">&#9749</div>
+                </div>
+                <img
+                src="./assets/sae_overfit/letter/vae/image.png"
+                alt=""
+                onload="this.style.display='block'; this.previousElementSibling.style.display='none';"/>
+            </div>
+
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">SD-VAE</div>
+
+            <div class="prompt-wrap full-screen-wrap" style="position: relative;">
+                <div class="loading-placeholder">
+                    <div class="loading-text">Loading...</div>
+                    <div class="loading-icon">&#9749</div>
+                </div>
+                <img
+                src="./assets/sae_overfit/letter/rae/image.png"
+                alt=""
+                onload="this.style.display='block'; this.previousElementSibling.style.display='none';"/>
+            </div>
+
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">R-AE</div>
+            
+            <div class="prompt-wrap full-screen-wrap" style="position: relative;">
+                <div class="loading-placeholder">
+                    <div class="loading-text">Loading...</div>
+                    <div class="loading-icon">&#9749</div>
+                </div>
+                <img
+                src="./assets/sae_overfit/letter/sae/image.png"
+                alt=""
+                onload="this.style.display='block'; this.previousElementSibling.style.display='none';"/>
+            </div>
+            <div class="col-title" style="font-family: 'Alegreya'; font-size: 1.2em;">S-AE</div>
+
+        </div>
+
+
+        </div> -->
+        </div>
+
+    </section>
+
+
+
+
+    <section class="ethics-section">
+        <h3>Ethics Concerns</h3>
+        <p>
+            All images featured in these demos are either generated by models or sourced from publicly available datasets, and are intended solely for the purpose of demonstrating the technical capabilities of our research. If you believe any content infringes upon rights or raises ethical concerns, please contact us at dengyufan10@stu.pku.edu.cn, we will address the issue and remove the material promptly.
+        </p>
+    </section>
+
+    <section class="bibtex-section">
+        <h3>BibTeX</h3> to do
+        <!-- <pre class="bibtex-code">@article{deng2025magref,
+        title={MAGREF: Masked Guidance for Any-Reference Video Generation with Subject Disentanglement},
+        author={Deng, Yufan and Guo, Xun and Yin, Yuanyang and Fang, Jacob Zhiyuan and Yang, Yiding and Wang, Yizhi and Yuan, Shenghai and Wang, Angtian and Liu, Bo and Huang, Haibin and others},
+        journal={arXiv preprint arXiv:2505.23742},
+        year={2025}
+        }</pre> -->
+    </section>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.6.2/js/bootstrap.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            // Clone the items to show neighbors in the carousel
+            $('.carousel-item', '.show-neighbors').each(function () {
+                var next = $(this).next();
+                if (!next.length) {
+                    next = $(this).siblings(':first');
+                }
+                next.children(':first-child').clone().appendTo($(this));
+            }).each(function () {
+                var prev = $(this).prev();
+                if (!prev.length) {
+                    prev = $(this).siblings(':last');
+                }
+                prev.children(':nth-last-child(2)').clone().prependTo($(this));
+            });
+
+            function playActiveVideo() {
+                // Stop all videos
+                $('.carousel-video').each(function () {
+                    this.pause();
+                });
+                
+                // Find the active carousel item (the middle one) and play its video
+                var activeVideo = $('#carouselExampleCaptions .carousel-item.active .video-wrapper video.carousel-video').get(0);
+
+                // Play the video only if it exists
+                if (activeVideo) {
+                    activeVideo.play();
+                }
+            }
+
+            // On slide event, pause all videos
+            $('#carouselExampleCaptions').on('slide.bs.carousel', function () {
+                $('.carousel-video').each(function () {
+                    this.pause();
+                });
+            });
+
+            // On slid event, play the active video
+            $('#carouselExampleCaptions').on('slid.bs.carousel', function () {
+                playActiveVideo();
+            });
+
+            // Play the active video on page load
+            playActiveVideo();
+        });
+    </script>
+
+</body>
+
+
+</html>
